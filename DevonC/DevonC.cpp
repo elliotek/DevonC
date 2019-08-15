@@ -452,7 +452,7 @@ template<> struct mcontrol< preprocess > : normal< preprocess >
     template< typename Input >
     static void raise( const Input& in, std::string & out)
     {
-        throw parse_error( "parse error matching " + internal::demangle< program >(), in );
+        throw parse_error(  internal::demangle< program >(), in );
     }
 };
 
@@ -479,7 +479,7 @@ template<> struct mcontrol< program > : normal< program >
     template< typename Input >
     static void raise( const Input& in)
     {
-        throw parse_error( "parse error matching " + internal::demangle< program >(), in );
+        throw parse_error(  internal::demangle< program >(), in );
     }
 };
 
