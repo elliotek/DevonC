@@ -33,6 +33,8 @@ xxxx:
 	jnf;
 	}
 
+	goto xxxx;
+
 	do
 	{glglgl;}
 	while( false);

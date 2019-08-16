@@ -114,6 +114,7 @@ struct label : seq< labelid, sblk, one<':'>> {};
 struct statement;
 struct unknownstatement : seq<plus<alnum>, sblk, one<';'> > {};
 struct assignstatement : seq<lvalue, sblk, one<'='>, sblk, expression> {};
+struct gotostatement : seq<TAO_PEGTL_STRING("goto"), sblk, labelid, sblk, one<';'> > {};
 struct returnstatement : seq<TAO_PEGTL_STRING( "return" ), opt< sblk, expression>, sblk, one<';'> > {};
 struct breakstatement : seq<TAO_PEGTL_STRING( "break" ), sblk, one<';'> > {};
 struct whilestatement : seq<TAO_PEGTL_STRING( "while" ), must< sblk, one<'('>, sblk, plus< whilecond, sblk>, one<')'>, sblk, statement > > {};
@@ -123,7 +124,7 @@ struct dowhilestatement : seq<TAO_PEGTL_STRING( "do" ), must< sblk, statement, s
 struct elsestatement : seq<TAO_PEGTL_STRING( "else" ), sblk, statement > {};
 struct ifstatement : seq<TAO_PEGTL_STRING( "if" ), sblk, one<'('>, sblk, plus< ifcond, sblk>, one<')'>, sblk, statement, opt< sblk, elsestatement > > {};
 struct localscope;
-struct statement : sor< localscope, localvardecl, breakstatement, returnstatement, forstatement, dowhilestatement, whilestatement, ifstatement, assignstatement, unknownstatement > {};
+struct statement : sor< localscope, localvardecl, breakstatement, returnstatement, forstatement, dowhilestatement, whilestatement, ifstatement, assignstatement, gotostatement, unknownstatement > {};
 struct scopestart : one<'{'> {};
 struct scope : seq< scopestart, star< sblk, sor< label, statement >>, sblk, one<'}'>> {};				  
 struct funcscope : scope {};
@@ -161,12 +162,20 @@ template<> struct maction< sblk >
     }
 };
 
+template<> struct maction< gotostatement >
+{
+	template< typename Input > static void apply(const Input& in)
+	{
+		std::cout << "GOTOSTATEMENT : " << in.string() << std::endl;
+	}
+};
+
 template<> struct maction< ifcond >
 {
-    template< typename Input > static void apply( const Input& in )
-    {
+	template< typename Input > static void apply(const Input& in)
+	{
 		std::cout << "IFCOND : " << in.string() << std::endl;
-    }
+	}
 };
 
 template<> struct maction< dowhilecond >
