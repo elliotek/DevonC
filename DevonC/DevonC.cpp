@@ -78,23 +78,34 @@ struct type_base  : sor< type_int, type_char, type_short, type_void, type_bool >
 struct type_pointer : seq< type_base, plus< sblk, one<'*'>> > {};
 struct typespecifier : sor< type_pointer, type_base > {};
 
-struct staticarraysize : seq< sblk, plus<digit> > {};
-struct varid : seq< identifier, opt< sblk, one<'['>, sblk, staticarraysize, sblk, one<']'> >> {};
-struct literalnumber : seq< opt< one<'-'> >, plus<digit>> {};
+struct literalchar : seq< one<'\''>, plus<seven>, one<'\''>> {};
+struct literalhexa : seq< one<'0'>, one<'x'>, must<plus<xdigit>> > {};
+struct literaldecimal : seq< opt< one<'-'> >, plus<digit>> {};
 struct literaltrue : TAO_PEGTL_STRING("true") {};
 struct literalfalse : TAO_PEGTL_STRING("false") {};
 struct literalnullptr : TAO_PEGTL_STRING("nullptr") {};
-struct literalexp : sor<literaltrue, literalfalse, literalnullptr, literalnumber> {};
+struct staticarraysize : sor< literalchar, literalhexa, literaldecimal > {};
+struct vardeclid : seq< identifier, star< sblk, one<'['>, sblk, staticarraysize, sblk, one<']'> >> {};
+struct literalexp : sor<literaltrue, literalfalse, literalnullptr, literalchar, literalhexa, literaldecimal> {};
 struct varinit : seq< sblk, one<'='>, sblk, literalexp> {};
 struct vartype : typespecifier {};
-struct vardecl : seq<sblk, vartype, pblk, list< varid, opt<varinit>, seq< sblk, one<','>, sblk > >, until< one<';'> > > {};
-struct globalvardecl : vardecl {};
-struct localvardecl : vardecl {};
+struct vardecl : seq<sblk, vartype, pblk, list< seq< vardeclid, opt<varinit> >, seq< sblk, one<','>, sblk > > > {};
+struct globalvardecl : seq< vardecl, one<';'> > {};
+struct localvardecl : seq< vardecl, one<';'> > {};
+struct forvardecl : vardecl {};
 
 struct expression : literalexp {};
 struct whilecond : expression {};
 struct dowhilecond : expression {};
 struct ifcond : expression {};
+struct forcond : expression {};
+
+struct arrayindex : expression {};
+struct memberid : identifier {};
+struct varid : identifier {};
+struct arrayaccess : seq< one<'['>, sblk, arrayindex, sblk, one<']'> >{};
+struct varaccess : seq<varid, star<sblk, arrayaccess>, star< sblk, one<'.'>, sblk, memberid, star<sblk, arrayaccess> >> {};
+struct lvalue : varaccess {};
 
 struct functype : typespecifier {};
 struct funcid : identifier {};
@@ -102,15 +113,17 @@ struct labelid : identifier {};
 struct label : seq< labelid, sblk, one<':'>> {};
 struct statement;
 struct unknownstatement : seq<plus<alnum>, sblk, one<';'> > {};
+struct assignstatement : seq<lvalue, sblk, one<'='>, sblk, expression> {};
 struct returnstatement : seq<TAO_PEGTL_STRING( "return" ), opt< sblk, expression>, sblk, one<';'> > {};
 struct breakstatement : seq<TAO_PEGTL_STRING( "break" ), sblk, one<';'> > {};
 struct whilestatement : seq<TAO_PEGTL_STRING( "while" ), must< sblk, one<'('>, sblk, plus< whilecond, sblk>, one<')'>, sblk, statement > > {};
-struct forstatement : seq<TAO_PEGTL_STRING( "for" ), must< sblk, one<'('>, sblk, one<')'>, sblk, statement > > {};
+struct nextstatement : sor<assignstatement, expression> {};
+struct forstatement : seq<TAO_PEGTL_STRING( "for" ), must< sblk, one<'('>, sblk, sor< forvardecl, expression >, sblk, one<';'>, sblk, forcond, sblk, one<';'>, sblk, nextstatement, sblk, one<')'>, sblk, statement > > {};
 struct dowhilestatement : seq<TAO_PEGTL_STRING( "do" ), must< sblk, statement, sblk, TAO_PEGTL_STRING( "while" ), sblk, one<'('>, sblk, plus< dowhilecond, sblk>, one<')'>, sblk, one<';'> > > {};
 struct elsestatement : seq<TAO_PEGTL_STRING( "else" ), sblk, statement > {};
 struct ifstatement : seq<TAO_PEGTL_STRING( "if" ), sblk, one<'('>, sblk, plus< ifcond, sblk>, one<')'>, sblk, statement, opt< sblk, elsestatement > > {};
 struct localscope;
-struct statement : sor< localscope, localvardecl, breakstatement, returnstatement, dowhilestatement, whilestatement, ifstatement, unknownstatement > {};
+struct statement : sor< localscope, localvardecl, breakstatement, returnstatement, forstatement, dowhilestatement, whilestatement, ifstatement, assignstatement, unknownstatement > {};
 struct scopestart : one<'{'> {};
 struct scope : seq< scopestart, star< sblk, sor< label, statement >>, sblk, one<'}'>> {};				  
 struct funcscope : scope {};
@@ -166,10 +179,82 @@ template<> struct maction< dowhilecond >
 
 template<> struct maction< whilecond >
 {
-    template< typename Input > static void apply( const Input& in )
-    {
+	template< typename Input > static void apply(const Input& in)
+	{
 		std::cout << "WHILECOND : " << in.string() << std::endl;
-    }
+	}
+};
+
+template<> struct maction< memberid >
+{
+	template< typename Input > static void apply(const Input& in)
+	{
+		std::cout << "MEMBERID : " << in.string() << std::endl;
+	}
+};
+
+template<> struct maction< arrayindex >
+{
+	template< typename Input > static void apply(const Input& in)
+	{
+		std::cout << "ARRAYINDEX : " << in.string() << std::endl;
+	}
+};
+
+template<> struct maction< arrayaccess >
+{
+	template< typename Input > static void apply(const Input& in)
+	{
+		std::cout << "ARRAYACCESS : " << in.string() << std::endl;
+	}
+};
+
+template<> struct maction< varid >
+{
+	template< typename Input > static void apply(const Input& in)
+	{
+		std::cout << "VARID : " << in.string() << std::endl;
+	}
+};
+
+template<> struct maction< lvalue >
+{
+	template< typename Input > static void apply(const Input& in)
+	{
+		std::cout << "LVALUE : " << in.string() << std::endl;
+	}
+};
+
+template<> struct maction< assignstatement >
+{
+	template< typename Input > static void apply(const Input& in)
+	{
+		std::cout << "ASSIGNSTATEMENT : " << in.string() << std::endl;
+	}
+};
+
+template<> struct maction< forstatement >
+{
+	template< typename Input > static void apply(const Input& in)
+	{
+		std::cout << "FORSTATEMENT" << std::endl;
+	}
+};
+
+template<> struct maction< forcond >
+{
+	template< typename Input > static void apply(const Input& in)
+	{
+		std::cout << "FORCOND : " << in.string() << std::endl;
+	}
+};
+
+template<> struct maction< nextstatement >
+{
+	template< typename Input > static void apply(const Input& in)
+	{
+		std::cout << "NEXTSTATEMENT : " << in.string() << std::endl;
+	}
 };
 
 template<> struct maction< ifstatement >
@@ -381,7 +466,7 @@ template<> struct maction< funcdecl >
 {
     template< typename Input > static void apply( const Input& in )
     {
-		std::cout << "FUNCDECL    " << in.string() << std::endl;
+		std::cout << "FUNCDECL IS VALID" << std::endl;
     }
 };
 
