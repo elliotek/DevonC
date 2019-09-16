@@ -53,5 +53,8 @@ xxxx:
 
 int main(int argc/*, char* argv[]*/)
 {
+	a = 356, b = true;
+	c = d = 39 || true && 67;
+	x = !! nullptr;
 	return false;
 }
