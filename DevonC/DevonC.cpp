@@ -2,6 +2,7 @@
 //
 
 #include <iostream>
+#include <time.h>
 
    /*
 Full, free support by email, phone and text. Register now or call 0845 638 1421 to sign up and start using SMS text messaging today.
@@ -92,21 +93,35 @@ struct arrayaccess : seq< one<'['>, sblk, arrayindex, sblk, one<']'> >{};
 struct varaccess : seq<varid, star<sblk, arrayaccess>, star< sblk, one<'.'>, sblk, memberid, star<sblk, arrayaccess> >> {};
 struct lvalue : varaccess {};
 
+enum ERelopType
+{
+	LowerEq,
+	Lower,
+	GreaterEq,
+	Greater,
+	Equal,
+	NotEqual,
+};
+
+template<ERelopType RelopType> struct relop {};
+template<> struct relop<LowerEq>	: seq<one<'<'>, one<'='>> {};
+template<> struct relop<Lower>		: one<'<'> {};
+template<> struct relop<GreaterEq>	: seq<one<'>'>, one<'='>> {};
+template<> struct relop<Greater>	: one<'>'> {};
+template<> struct relop<Equal>		: two<'='> {};
+template<> struct relop<NotEqual>	: seq<one<'!'>, one<'='>> {};
+
+struct expressionerror : failure {};
 struct expression;
 struct subexpression;
 struct parenthesedexpression : seq<one<'('>, sblk, expression, sblk, one<')'>> {};
 struct funcid;
-struct funcarglist : seq< sblk, subexpression, star<sblk, one<','>, sblk, subexpression>, sblk>{};
-struct funccall : seq< funcid, sblk, one<'('>, opt<funcarglist>, one<')'> > {};
-struct rvalue : sor< parenthesedexpression, funccall, literalexp> {};
+struct funcargexpression;
+struct funcarglist : list< funcargexpression, seq<sblk, one<','>, sblk> > {};
+struct funccall : seq< funcid, sblk, one<'('>, sblk, opt<funcarglist>, sblk, one<')'> > {};
+struct rvalue : sor< parenthesedexpression, funccall, literalexp, expressionerror> {};
 struct assignment : seq<lvalue, sblk, one<'='>, sblk, expression> {};
-struct lowereqop : seq<one<'<'>, one<'='>> {};
-struct lowerop : one<'<'> {};
-struct greatereqop : seq<one<'>'>, one<'='>> {};
-struct greaterop : one<'>'> {};
-struct eqop : two<'='> {};
-struct noteqop : seq<one<'!'>, one<'='>> {};
-struct relop : sor<lowereqop, lowerop, greaterop, greatereqop, eqop, noteqop> {};
+struct reloperator : sor<relop<LowerEq>, relop<Lower>, relop<GreaterEq>, relop<Greater>, relop<Equal>, relop<NotEqual>> {};
 struct addop : one<'+'> {};
 struct subop : one<'-'> {};
 struct mulop : one<'*'> {};
@@ -119,21 +134,20 @@ struct unaryop : sor<minusop, indirectop, addressop> {};
 struct sumop : sor<addop, subop> {};
 struct prodop : sor<mulop, divop, modop> {};
 struct factor : sor<rvalue, lvalue> {};
-struct unaryexpression : sor < seq < unaryop, sblk, unaryexpression >, factor> {};
-struct termexpression : sor < seq < termexpression, sblk, prodop, sblk, unaryexpression >, unaryexpression> {};
-struct sumexpression : sor < seq < sumexpression, sblk, sumop , sblk, termexpression >, termexpression> {};
-//struct relexpression : sor< seq<sumexpression, sblk, relop, sblk, sumexpression>, sumexpression> {};
-struct relexpression : literalexp {};
+struct applyunaryexpression;
+struct unaryexpression : if_then_else<unaryop, seq<sblk, applyunaryexpression>, factor> {};
+struct applyunaryexpression : unaryexpression {};
+struct productexpression : list< if_then_else< at<unaryexpression>, unaryexpression, expressionerror>, seq<sblk, prodop, sblk> > {};
+struct sumexpression : list< if_then_else< at<productexpression>, productexpression, expressionerror>, seq<sblk, sumop, sblk> > {};
+struct applyrelexpression : seq<sumexpression, sblk, reloperator, sblk, sumexpression> {};
+struct relexpression : if_then_else< at<applyrelexpression>, applyrelexpression, sumexpression> {};
 struct applynotexpression;
-struct notexpression : if_then_else<one<'!'>, seq<sblk, applynotexpression>, seq<sblk, relexpression>> {};
+struct notexpression : if_then_else<one<'!'>, seq<sblk, applynotexpression>, relexpression> {};
 struct applynotexpression : notexpression {};
-struct applyandexpression;
-struct andexpression : seq<notexpression, star<sblk, two<'&'>, sblk, applyandexpression>> {};
-struct applyandexpression : notexpression {};
-struct applyorexpression;
-struct orexpression : seq<andexpression, star<sblk, two<'|'>, sblk, applyorexpression>> {};
-struct applyorexpression : andexpression {};
-struct subexpression : sor<assignment, orexpression, literalexp> {};
+struct andexpression : list< if_then_else< at<notexpression>, notexpression, expressionerror>, seq<sblk, two<'&'>, sblk> > {};
+struct orexpression : list< if_then_else< at<andexpression>, andexpression, expressionerror>, seq<sblk, two<'|'>, sblk> > {};
+struct subexpression : if_then_else<at<assignment>, assignment, if_then_else< at<orexpression>, orexpression, expressionerror>> {};
+struct funcargexpression : subexpression {};
 struct expression : list< subexpression, seq<sblk, one<','>, sblk> > {};
 struct arrayindex : expression {};
 
@@ -161,7 +175,7 @@ struct ifstatement : seq<TAO_PEGTL_STRING( "if" ), sblk, one<'('>, sblk, plus< i
 struct localscope;
 struct statement : sor< localscope, localvardecl, breakstatement, returnstatement, forstatement, dowhilestatement, whilestatement, ifstatement, gotostatement, expressionstatement, unknownstatement > {};
 struct scopestart : one<'{'> {};
-struct scope : seq< scopestart, star< sblk, sor< label, statement >>, sblk, one<'}'>> {};				  
+struct scope : seq< scopestart, star< sblk, if_then_else< at<label>, label, statement >>, sblk, one<'}'>> {};
 struct funcscope : scope {};
 struct localscope : scope {};
 
@@ -197,11 +211,75 @@ template<> struct maction< sblk >
     }
 };
 
+template<> struct maction< funcargexpression >
+{
+	template< typename Input > static void apply(const Input& in)
+	{
+		std::cout << "FUNCARGEXPRESSION : " << in.string() << std::endl;
+	}
+};
+
+template<> struct maction< funccall >
+{
+	template< typename Input > static void apply(const Input& in)
+	{
+		std::cout << "FUNCCALL : " << in.string() << std::endl;
+	}
+};
+
+template<> struct maction< expressionerror >
+{
+	template< typename Input > static void apply(const Input& in)
+	{
+		std::cout << "EXPRESSIONERROR : " << in.string() << std::endl;
+	}
+};
+
+template<> struct maction< applyunaryexpression >
+{
+	template< typename Input > static void apply(const Input& in)
+	{
+		std::cout << "APPLYUNARYEXPRESSION : " << in.string() << std::endl;
+	}
+};
+
+template<> struct maction< productexpression >
+{
+	template< typename Input > static void apply(const Input& in)
+	{
+		std::cout << "PRODUCTEXPRESSION : " << in.string() << std::endl;
+	}
+};
+
+template<> struct maction< sumexpression >
+{
+	template< typename Input > static void apply(const Input& in)
+	{
+		std::cout << "SUMEXPRESSION : " << in.string() << std::endl;
+	}
+};
+
+template<ERelopType T> struct maction< relop<T> >
+{
+	template< typename Input > static void apply(const Input& in)
+	{
+		std::cout << "RELOP : " << in.string() << std::endl;
+	}
+};
+
 template<> struct maction< literaldecimal >
 {
 	template< typename Input > static void apply(const Input& in)
 	{
 		std::cout << "LITERALDECIMAL : " << in.string() << std::endl;
+	}
+};
+
+template<> struct maction< literalhexa >
+{
+	template< typename Input > static void apply(const Input& in)
+	{
+		std::cout << "LITERALHEXA : " << in.string() << std::endl;
 	}
 };
 
@@ -213,7 +291,15 @@ template<> struct maction< applynotexpression >
 	}
 };
 
-template<> struct maction< applyorexpression >
+template<> struct maction< relexpression >
+{
+	template< typename Input > static void apply(const Input& in)
+	{
+		std::cout << "REL EXPR : " << in.string() << std::endl;
+	}
+};
+
+template<> struct maction< orexpression >
 {
 	template< typename Input > static void apply(const Input& in)
 	{
@@ -221,7 +307,7 @@ template<> struct maction< applyorexpression >
 	}
 };
 
-template<> struct maction< applyandexpression >
+template<> struct maction< andexpression >
 {
 	template< typename Input > static void apply(const Input& in)
 	{
@@ -233,7 +319,7 @@ template<> struct maction< literalexp >
 {
 	template< typename Input > static void apply(const Input& in)
 	{
-		std::cout << "LITERALEXP : " << in.string() << std::endl;
+//		std::cout << "LITERALEXP : " << in.string() << std::endl;
 	}
 };
 
@@ -297,7 +383,7 @@ template<> struct maction< varid >
 {
 	template< typename Input > static void apply(const Input& in)
 	{
-		std::cout << "VARID : " << in.string() << std::endl;
+		//std::cout << "VARID : " << in.string() << std::endl;
 	}
 };
 
@@ -656,6 +742,8 @@ int main(const int argc, char* argv[])  // NOLINT(bugprone-exception-escape)
 {
 	if (argc > 1)
 	{
+		clock_t t = clock();
+
 		std::string PreProcessedStr;
 		file_input FileInput(argv[1]);
 		parse<preprocess, maction, mcontrol>(FileInput, PreProcessedStr);
@@ -664,6 +752,8 @@ int main(const int argc, char* argv[])  // NOLINT(bugprone-exception-escape)
 
 		string_input in1(PreProcessedStr, "");
 		parse<program, maction, mcontrol>(in1);
+
+		printf("Compiled in %fs.\n", float(clock() - t) / CLOCKS_PER_SEC);
 	}
 
 	return 1;

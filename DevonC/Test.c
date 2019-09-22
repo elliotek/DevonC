@@ -54,7 +54,10 @@ xxxx:
 int main(int argc/*, char* argv[]*/)
 {
 	a = 356, b = true;
-	c = d = 39 || true && 67;
+	c = d = 0x888|| true && 67 || 59 > 4;
 	x = !! nullptr;
+	w = !36 < 12;
+	d = f(x, 39) % 32 * (a + b);
+
 	return false;
 }
