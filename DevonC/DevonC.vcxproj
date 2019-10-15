@@ -159,6 +159,9 @@
   <ItemGroup>
     <ClCompile Include="DevonC.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Compiler.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

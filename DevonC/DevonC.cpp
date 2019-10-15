@@ -4,6 +4,7 @@
 #include <iostream>
 #include <time.h>
 
+#include "Compiler.h"
    /*
 Full, free support by email, phone and text. Register now or call 0845 638 1421 to sign up and start using SMS text messaging today.
 */
@@ -24,7 +25,7 @@ struct preprocess : star< sor<pp_comment, pp_long_comment, pp_code>> {};
 
 template<> struct maction< pp_comment >
 {
-    template< typename Input > static void apply( const Input& in , std::string & out)
+    template< typename Input > static void apply( const Input& in, std::string & out)
     {
 		std::cout << "PP_COMMENT : "<< in.string() << std::endl;
     }
@@ -32,7 +33,7 @@ template<> struct maction< pp_comment >
 
 template<> struct maction< pp_long_comment >
 {
-    template< typename Input > static void apply( const Input& in , std::string & out)
+    template< typename Input > static void apply( const Input& in, std::string & out)
     {
 		std::cout << "PP_LONG_COMMENT : "<< in.string() << std::endl;
     }
@@ -40,7 +41,7 @@ template<> struct maction< pp_long_comment >
 
 template<> struct maction< pp_code >
 {
-    template< typename Input > static void apply( const Input& in , std::string & out)
+    template< typename Input > static void apply( const Input& in, std::string & out)
     {
 		out += in.string();
     }
@@ -48,7 +49,7 @@ template<> struct maction< pp_code >
 
 template<> struct maction< preprocess >
 {
-    template< typename Input > static void apply( const Input& in , std::string & out)
+    template< typename Input > static void apply( const Input& in, std::string & out)
     {
 		std::cout << "PREPROCESS" << std::endl;
     }
@@ -76,15 +77,16 @@ struct literaldecimal : seq< opt< one<'-'> >, plus<digit>> {};
 struct literaltrue : TAO_PEGTL_STRING("true") {};
 struct literalfalse : TAO_PEGTL_STRING("false") {};
 struct literalnullptr : TAO_PEGTL_STRING("nullptr") {};
-struct staticarraysize : sor< literalchar, literalhexa, literaldecimal > {};
-struct vardeclid : seq< identifier, star< sblk, one<'['>, sblk, staticarraysize, sblk, one<']'> >> {};
+struct staticarraysize : sor< literalhexa, literaldecimal > {};
+struct vardeclid : identifier {};
 struct literalexp : sor<literaltrue, literalfalse, literalnullptr, literalchar, literalhexa, literaldecimal> {};
 struct varinit : seq< sblk, one<'='>, sblk, literalexp> {};
 struct vartype : typespecifier {};
-struct vardecl : seq<sblk, vartype, pblk, list< seq< vardeclid, opt<varinit> >, seq< sblk, one<','>, sblk > > > {};
-struct globalvardecl : seq< vardecl, one<';'> > {};
-struct localvardecl : seq< vardecl, one<';'> > {};
-struct forvardecl : vardecl {};
+struct vardecl : seq< vardeclid, star< sblk, one<'['>, sblk, staticarraysize, sblk, one<']'> >, opt<varinit> > {};
+struct compvardecl : seq<sblk, vartype, pblk, list< vardecl, seq< sblk, one<','>, sblk > > > {};
+struct globalvardecl : seq< compvardecl, one<';'> > {};
+struct localvardecl : seq< compvardecl, one<';'> > {};
+struct forvardecl : compvardecl {};
 
 struct memberid : identifier {};
 struct varid : identifier {};
@@ -197,7 +199,7 @@ struct program : until< eof, sor<	blank_line,
 
 template<> struct maction< blank_line >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 //		std::cout << "BLANK LINE" << std::endl;
     }
@@ -205,7 +207,7 @@ template<> struct maction< blank_line >
 
 template<> struct maction< sblk >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 //		std::cout << "SBLK(" << in.string() << ")" << std::endl;
     }
@@ -213,7 +215,7 @@ template<> struct maction< sblk >
 
 template<> struct maction< funcargexpression >
 {
-	template< typename Input > static void apply(const Input& in)
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler & Compiler)
 	{
 		std::cout << "FUNCARGEXPRESSION : " << in.string() << std::endl;
 	}
@@ -221,7 +223,7 @@ template<> struct maction< funcargexpression >
 
 template<> struct maction< funccall >
 {
-	template< typename Input > static void apply(const Input& in)
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler & Compiler)
 	{
 		std::cout << "FUNCCALL : " << in.string() << std::endl;
 	}
@@ -229,7 +231,7 @@ template<> struct maction< funccall >
 
 template<> struct maction< expressionerror >
 {
-	template< typename Input > static void apply(const Input& in)
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler & Compiler)
 	{
 		std::cout << "EXPRESSIONERROR : " << in.string() << std::endl;
 	}
@@ -237,7 +239,7 @@ template<> struct maction< expressionerror >
 
 template<> struct maction< applyunaryexpression >
 {
-	template< typename Input > static void apply(const Input& in)
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler & Compiler)
 	{
 		std::cout << "APPLYUNARYEXPRESSION : " << in.string() << std::endl;
 	}
@@ -245,7 +247,7 @@ template<> struct maction< applyunaryexpression >
 
 template<> struct maction< productexpression >
 {
-	template< typename Input > static void apply(const Input& in)
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler & Compiler)
 	{
 		std::cout << "PRODUCTEXPRESSION : " << in.string() << std::endl;
 	}
@@ -253,7 +255,7 @@ template<> struct maction< productexpression >
 
 template<> struct maction< sumexpression >
 {
-	template< typename Input > static void apply(const Input& in)
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler & Compiler)
 	{
 		std::cout << "SUMEXPRESSION : " << in.string() << std::endl;
 	}
@@ -261,7 +263,7 @@ template<> struct maction< sumexpression >
 
 template<ERelopType T> struct maction< relop<T> >
 {
-	template< typename Input > static void apply(const Input& in)
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler & Compiler)
 	{
 		std::cout << "RELOP : " << in.string() << std::endl;
 	}
@@ -269,23 +271,25 @@ template<ERelopType T> struct maction< relop<T> >
 
 template<> struct maction< literaldecimal >
 {
-	template< typename Input > static void apply(const Input& in)
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler & Compiler)
 	{
 		std::cout << "LITERALDECIMAL : " << in.string() << std::endl;
+		Compiler.CurLiteralValue = std::stoi(in.string());
 	}
 };
 
 template<> struct maction< literalhexa >
 {
-	template< typename Input > static void apply(const Input& in)
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler & Compiler)
 	{
 		std::cout << "LITERALHEXA : " << in.string() << std::endl;
+		Compiler.CurLiteralValue = std::stoi(in.string(), nullptr, 16);
 	}
 };
 
 template<> struct maction< applynotexpression >
 {
-	template< typename Input > static void apply(const Input& in)
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler & Compiler)
 	{
 		std::cout << "! EXPR : " << in.string() << std::endl;
 	}
@@ -293,7 +297,7 @@ template<> struct maction< applynotexpression >
 
 template<> struct maction< relexpression >
 {
-	template< typename Input > static void apply(const Input& in)
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler & Compiler)
 	{
 		std::cout << "REL EXPR : " << in.string() << std::endl;
 	}
@@ -301,7 +305,7 @@ template<> struct maction< relexpression >
 
 template<> struct maction< orexpression >
 {
-	template< typename Input > static void apply(const Input& in)
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler & Compiler)
 	{
 		std::cout << "|| EXPR : " << in.string() << std::endl;
 	}
@@ -309,7 +313,7 @@ template<> struct maction< orexpression >
 
 template<> struct maction< andexpression >
 {
-	template< typename Input > static void apply(const Input& in)
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler & Compiler)
 	{
 		std::cout << "&& EXPR : " << in.string() << std::endl;
 	}
@@ -317,7 +321,7 @@ template<> struct maction< andexpression >
 
 template<> struct maction< literalexp >
 {
-	template< typename Input > static void apply(const Input& in)
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler & Compiler)
 	{
 //		std::cout << "LITERALEXP : " << in.string() << std::endl;
 	}
@@ -325,7 +329,7 @@ template<> struct maction< literalexp >
 
 template<> struct maction< gotostatement >
 {
-	template< typename Input > static void apply(const Input& in)
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler & Compiler)
 	{
 		std::cout << "GOTOSTATEMENT : " << in.string() << std::endl;
 	}
@@ -333,7 +337,7 @@ template<> struct maction< gotostatement >
 
 template<> struct maction< ifcond >
 {
-	template< typename Input > static void apply(const Input& in)
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler & Compiler)
 	{
 		std::cout << "IFCOND : " << in.string() << std::endl;
 	}
@@ -341,7 +345,7 @@ template<> struct maction< ifcond >
 
 template<> struct maction< dowhilecond >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "DOWHILECOND : " << in.string() << std::endl;
     }
@@ -349,7 +353,7 @@ template<> struct maction< dowhilecond >
 
 template<> struct maction< whilecond >
 {
-	template< typename Input > static void apply(const Input& in)
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler & Compiler)
 	{
 		std::cout << "WHILECOND : " << in.string() << std::endl;
 	}
@@ -357,7 +361,7 @@ template<> struct maction< whilecond >
 
 template<> struct maction< memberid >
 {
-	template< typename Input > static void apply(const Input& in)
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler & Compiler)
 	{
 		std::cout << "MEMBERID : " << in.string() << std::endl;
 	}
@@ -365,7 +369,7 @@ template<> struct maction< memberid >
 
 template<> struct maction< arrayindex >
 {
-	template< typename Input > static void apply(const Input& in)
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler & Compiler)
 	{
 		std::cout << "ARRAYINDEX : " << in.string() << std::endl;
 	}
@@ -373,7 +377,7 @@ template<> struct maction< arrayindex >
 
 template<> struct maction< arrayaccess >
 {
-	template< typename Input > static void apply(const Input& in)
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler & Compiler)
 	{
 		std::cout << "ARRAYACCESS : " << in.string() << std::endl;
 	}
@@ -381,7 +385,7 @@ template<> struct maction< arrayaccess >
 
 template<> struct maction< varid >
 {
-	template< typename Input > static void apply(const Input& in)
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler & Compiler)
 	{
 		//std::cout << "VARID : " << in.string() << std::endl;
 	}
@@ -389,7 +393,7 @@ template<> struct maction< varid >
 
 template<> struct maction< lvalue >
 {
-	template< typename Input > static void apply(const Input& in)
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler & Compiler)
 	{
 		std::cout << "LVALUE : " << in.string() << std::endl;
 	}
@@ -397,7 +401,7 @@ template<> struct maction< lvalue >
 
 template<> struct maction< assignment >
 {
-	template< typename Input > static void apply(const Input& in)
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler & Compiler)
 	{
 		std::cout << "ASSIGNMENT : " << in.string() << std::endl;
 	}
@@ -405,7 +409,7 @@ template<> struct maction< assignment >
 
 template<> struct maction< forstatement >
 {
-	template< typename Input > static void apply(const Input& in)
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler & Compiler)
 	{
 		std::cout << "FORSTATEMENT" << std::endl;
 	}
@@ -413,7 +417,7 @@ template<> struct maction< forstatement >
 
 template<> struct maction< forcond >
 {
-	template< typename Input > static void apply(const Input& in)
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler & Compiler)
 	{
 		std::cout << "FORCOND : " << in.string() << std::endl;
 	}
@@ -421,7 +425,7 @@ template<> struct maction< forcond >
 
 template<> struct maction< nextstatement >
 {
-	template< typename Input > static void apply(const Input& in)
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler & Compiler)
 	{
 		std::cout << "NEXTSTATEMENT : " << in.string() << std::endl;
 	}
@@ -429,7 +433,7 @@ template<> struct maction< nextstatement >
 
 template<> struct maction< ifstatement >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "IFSTATEMENT" << std::endl;
     }
@@ -437,7 +441,7 @@ template<> struct maction< ifstatement >
 
 template<> struct maction< elsestatement >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "ELSESTATEMENT" << std::endl;
     }
@@ -445,7 +449,7 @@ template<> struct maction< elsestatement >
 
 template<> struct maction< literaltrue >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "LITERAL TRUE" << std::endl;
     }
@@ -453,7 +457,7 @@ template<> struct maction< literaltrue >
 
 template<> struct maction< literalfalse >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "LITERAL FALSE" << std::endl;
     }
@@ -461,7 +465,7 @@ template<> struct maction< literalfalse >
 
 template<> struct maction< literalnullptr >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "LITERAL NULLPTR" << std::endl;
     }
@@ -469,7 +473,7 @@ template<> struct maction< literalnullptr >
 
 template<> struct maction< dowhilestatement >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "DO WHILE STATEMENT : " << in.string() << std::endl;
     }
@@ -477,12 +481,12 @@ template<> struct maction< dowhilestatement >
     
 template<> struct maction< whilestatement >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "WHILE STATEMENT : " << in.string() << std::endl;
     }
     
-	template< typename Input > static void failure( Input& in)
+	template< typename Input > static void failure( Input& in, DevonC::Compiler & Compiler)
     {
 		std::cout << "!!!! WHILE STATEMENT FAILURE: " << in.string() << std::endl;
     }
@@ -490,7 +494,7 @@ template<> struct maction< whilestatement >
 
 template<> struct maction< breakstatement >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "BREAK STATEMENT : " << in.string() << std::endl;
     }
@@ -498,7 +502,7 @@ template<> struct maction< breakstatement >
 
 template<> struct maction< unknownstatement >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "UNKNOWN STATEMENT : " << in.string() << std::endl;
     }
@@ -506,7 +510,7 @@ template<> struct maction< unknownstatement >
 
 template<> struct maction< returnstatement >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "RETURN STATEMENT : " << in.string() << std::endl;
     }
@@ -514,7 +518,7 @@ template<> struct maction< returnstatement >
 
 template<> struct maction< funcparam >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "FUNCPARAM : " << in.string() << std::endl;
     }
@@ -522,7 +526,7 @@ template<> struct maction< funcparam >
 
 template<> struct maction< paramtype >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "PARAMTYPE : " << in.string() << std::endl;
     }
@@ -530,7 +534,7 @@ template<> struct maction< paramtype >
 
 template<> struct maction< paramid >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "PARAMID : " << in.string() << std::endl;
     }
@@ -538,7 +542,7 @@ template<> struct maction< paramid >
 
 template<> struct maction< localscope >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "LOCALSCOPE END : " << in.string() << std::endl;
     }
@@ -546,7 +550,7 @@ template<> struct maction< localscope >
 
 template<> struct maction< labelid >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "LABELID : " << in.string() << std::endl;
     }
@@ -554,7 +558,7 @@ template<> struct maction< labelid >
 
 template<> struct maction< label >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "LABEL : " << in.string() << std::endl;
     }
@@ -562,7 +566,7 @@ template<> struct maction< label >
 
 template<> struct maction< unknown >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "UNKNOWN : " << in.string() << std::endl;
     }
@@ -570,7 +574,7 @@ template<> struct maction< unknown >
 
 template<> struct maction< scopestart >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "SCOPE START" << std::endl;
     }
@@ -578,7 +582,7 @@ template<> struct maction< scopestart >
 
 template<> struct maction< scope >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "SCOPE END" << std::endl;
     }
@@ -586,7 +590,7 @@ template<> struct maction< scope >
 
 template<> struct maction< funcscope >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 //		std::cout << "FUNCSCOPE END" << std::endl;
     }
@@ -594,7 +598,7 @@ template<> struct maction< funcscope >
 
 template<> struct maction< vartype >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "VARTYPE : " << in.string() << std::endl;
     }
@@ -602,7 +606,7 @@ template<> struct maction< vartype >
 
 template<> struct maction< functype >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "FUNCTYPE : " << in.string() << std::endl;
     }
@@ -610,15 +614,16 @@ template<> struct maction< functype >
 
 template<> struct maction< staticarraysize >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "ARRAY SIZE : " << in.string() << std::endl;
+		Compiler.CurVarDecl.ArraySizes.push_back(Compiler.CurLiteralValue);
     }
 };
 
 template<> struct maction< funcid >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "FUNCID : " << in.string() << std::endl;
     }
@@ -626,7 +631,7 @@ template<> struct maction< funcid >
 
 template<> struct maction< identifier >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "ID : " << in.string() << std::endl;
     }
@@ -634,32 +639,49 @@ template<> struct maction< identifier >
 
 template<> struct maction< funcdecl >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "FUNCDECL IS VALID" << std::endl;
     }
 };
 
+template<> struct maction< vardeclid >
+{
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
+    {
+		Compiler.CurVarDecl.Identifier = in.string();
+    }
+};
 
 template<> struct maction< globalvardecl >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "GLOBALVARDECL    " << in.string() << std::endl;
+		Compiler.ValidateGlobalVar();
     }
 };
 
 template<> struct maction< localvardecl >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "LOCALVARDECL    " << in.string() << std::endl;
     }
 };
 
+template<> struct maction< vardecl >
+{
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
+    {
+		std::cout << "VARDECL    " << in.string() << std::endl;
+		Compiler.PushPendingVarDecl();
+    }
+};
+
 template<> struct maction< directive >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "DIRECTIVE    " << in.string();
     }
@@ -667,7 +689,7 @@ template<> struct maction< directive >
 
 template<> struct maction< declaration >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		//std::cout << in.string() << std::endl;
     }
@@ -675,7 +697,7 @@ template<> struct maction< declaration >
 
 template<> struct maction< program >
 {
-    template< typename Input > static void apply( const Input& in )
+    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
     {
 		std::cout << "END OF PROGRAM.\n";
     }
@@ -714,25 +736,25 @@ template<> struct mcontrol< preprocess > : normal< preprocess >
 template<> struct mcontrol< program > : normal< program >
 {
     template< typename Input >
-    static void start( Input& in)
+    static void start( Input& in, DevonC::Compiler & Compiler)
     {
 		std::cout << "START OF COMPILATION.\n";
     }
 
     template< typename Input >
-    static void success( Input& in)
+    static void success( Input& in, DevonC::Compiler & Compiler)
     {
 		std::cout << "END OF COMPILATION.\n";
     }
 
     template< typename Input >
-    static void failure( Input& in)
+    static void failure( Input& in, DevonC::Compiler & Compiler)
     {
 		std::cout << "FAILURE OF COMPILATION.\n";
     }
 
     template< typename Input >
-    static void raise( const Input& in)
+    static void raise( const Input& in, DevonC::Compiler & Compiler)
     {
         throw parse_error(  internal::demangle< program >(), in );
     }
@@ -750,8 +772,10 @@ int main(const int argc, char* argv[])  // NOLINT(bugprone-exception-escape)
 
 		std::cout << PreProcessedStr << std::endl;
 
+		DevonC::Compiler Compiler;
+
 		string_input in1(PreProcessedStr, "");
-		parse<program, maction, mcontrol>(in1);
+		parse<program, maction, mcontrol>(in1, Compiler);
 
 		printf("Compiled in %fs.\n", float(clock() - t) / CLOCKS_PER_SEC);
 	}
