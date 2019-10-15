@@ -1,14 +1,7 @@
-  // DevonC.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
 #include <iostream>
 #include <time.h>
 
 #include "Compiler.h"
-   /*
-Full, free support by email, phone and text. Register now or call 0845 638 1421 to sign up and start using SMS text messaging today.
-*/
-
 #include "../PEGTL-master/include/tao/pegtl.hpp"
 
 namespace pegtl = TAO_PEGTL_NAMESPACE;
@@ -28,6 +21,7 @@ template<> struct maction< pp_comment >
     template< typename Input > static void apply( const Input& in, std::string & out)
     {
 		std::cout << "PP_COMMENT : "<< in.string() << std::endl;
+		out += "\n";
     }
 };
 
@@ -35,7 +29,11 @@ template<> struct maction< pp_long_comment >
 {
     template< typename Input > static void apply( const Input& in, std::string & out)
     {
-		std::cout << "PP_LONG_COMMENT : "<< in.string() << std::endl;
+		std::string lc = in.string();
+		std::cout << "PP_LONG_COMMENT : "<< lc << std::endl;
+		size_t n = std::count(lc.begin(), lc.end(), '\n');
+		for(int i = 0; i < n; i++)
+			out += "\n";
     }
 };
 
