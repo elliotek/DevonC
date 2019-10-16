@@ -66,8 +66,8 @@ struct type_short : TAO_PEGTL_STRING("short") {};
 struct type_void  : TAO_PEGTL_STRING("void") {};
 struct type_bool  : TAO_PEGTL_STRING("bool") {};
 struct type_base  : sor< type_int, type_char, type_short, type_void, type_bool > {};
-struct type_pointer : seq< type_base, plus< sblk, one<'*'>> > {};
-struct typespecifier : sor< type_pointer, type_base > {};
+struct type_pointer : one<'*'> {};
+struct typespecifier : seq< type_base, star< sblk, type_pointer> > {};
 
 struct literalchar : seq< one<'\''>, plus<seven>, one<'\''>> {};
 struct literalhexa : seq< one<'0'>, one<'x'>, must<plus<xdigit>> > {};
@@ -269,10 +269,18 @@ template<ERelopType T> struct maction< relop<T> >
 
 template<> struct maction< literaldecimal >
 {
-	template< typename Input > static void apply(const Input& in, DevonC::Compiler & Compiler)
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler& Compiler)
 	{
 		std::cout << "LITERALDECIMAL : " << in.string() << std::endl;
 		Compiler.CurLiteralValue = std::stoi(in.string());
+	}
+};
+template<> struct maction< literalchar >
+{
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler& Compiler)
+	{
+		std::cout << "LITERALCHAR : " << in.string() << std::endl;
+		Compiler.CurLiteralValue = std::string(in.string())[0];
 	}
 };
 
@@ -612,11 +620,38 @@ template<> struct maction< functype >
 
 template<> struct maction< staticarraysize >
 {
-    template< typename Input > static void apply( const Input& in, DevonC::Compiler & Compiler )
-    {
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler& Compiler)
+	{
 		std::cout << "ARRAY SIZE : " << in.string() << std::endl;
 		Compiler.CurVarDecl.ArraySizes.push_back(Compiler.CurLiteralValue);
-    }
+	}
+};
+
+template<> struct maction< type_pointer >
+{
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler& Compiler)
+	{
+		Compiler.CurVarDecl.PointerIndirection++;
+	}
+};
+
+template<> struct maction< type_base >
+{
+	template< typename Input > static void apply(const Input& in, DevonC::Compiler& Compiler)
+	{
+		std::string t = in.string();
+		switch (t[0])
+		{
+		case 'i':	Compiler.CurVarDecl.Type = DevonC::VarType::Int;	break;
+		case 'c':	Compiler.CurVarDecl.Type = DevonC::VarType::Char;	break;
+		case 's':	Compiler.CurVarDecl.Type = DevonC::VarType::Short;	break;
+		case 'v':	Compiler.CurVarDecl.Type = DevonC::VarType::Void;	break;
+		case 'b':	Compiler.CurVarDecl.Type = DevonC::VarType::Bool;	break;
+		}
+
+		Compiler.CurVarDecl.PointerIndirection = 0;
+
+	}
 };
 
 template<> struct maction< funcid >

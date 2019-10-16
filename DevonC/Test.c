@@ -17,6 +17,7 @@ void testfunc(int a, char xxxx);
 
 int a, b = 0;		// xxxyyy
 char * xxx[0xFaB0][37];
+void** yyy = 'A';
 
 void testfunc(int a, char xxxx)
 {

@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <optional>
 
 namespace DevonC
 {
@@ -20,9 +21,9 @@ namespace DevonC
 	{
 		std::string Identifier;
 		VarType Type = VarType::Unknown;
-		int Address = 0;
-		bool HasInitValue = false;
 		std::vector<int> ArraySizes;
+		int PointerIndirection = 0;
+		std::optional<int> StaticInit;
 
 		union
 		{
@@ -102,7 +103,19 @@ namespace DevonC
 			std::cout << "\nGlobals:\n";
 			for(auto var : GlobalVars)
 			{
-				std::cout << "\t" << var.Identifier;
+				std::cout << "\t";
+				switch (var.Type)
+				{
+				case VarType::Void:		std::cout << "Void";	break;
+				case VarType::Char:		std::cout << "Char";	break;
+				case VarType::Bool:		std::cout << "Bool";	break;
+				case VarType::Short:	std::cout << "Short";	break;
+				case VarType::Int:		std::cout << "Int";		break;
+				default:				std::cout << "Unknown-Type";	break;
+				}
+				for(int i = 0; i < var.PointerIndirection; i++)
+					std::cout << "*";
+				std::cout << " " << var.Identifier;
 
 				for(auto arraySize : var.ArraySizes)
 					std::cout << "[" << arraySize << "]";
