@@ -6,6 +6,14 @@
 
 namespace DevonC
 {
+	enum class LiteralType : unsigned char
+	{
+		None,
+		Numeric,
+		Boolean,
+		Nullptr,
+	};
+
 	enum class VarType : unsigned char
 	{
 		Unknown,
@@ -24,15 +32,6 @@ namespace DevonC
 		std::vector<int> ArraySizes;
 		int PointerIndirection = 0;
 		std::optional<int> StaticInit;
-
-		union
-		{
-			int Int;
-			char Char;
-			short Short;
-			bool Bool;
-			int Pointer;
-		} InitialValue;
 
 		Variable() {};
 		Variable(const std::string & _Identifier) : Identifier(_Identifier) {};
@@ -71,6 +70,12 @@ namespace DevonC
 		Function(const std::string & _Identifier) : Identifier(_Identifier) {};
 	};
 
+	enum class EErrorCode : unsigned char
+	{
+		VoidVarDecl,
+		BadInitializerLiteralType,
+	};
+
 	class Compiler
 	{
 		std::vector<Variable>	GlobalVars;
@@ -78,6 +83,8 @@ namespace DevonC
 		std::vector<Scope>		ScopeStack;
 
 		std::vector<Variable>	PendingVarDecls;
+
+		int NbErrors = 0;
 
 		int TypeSize(VarType _Type)
 		{
@@ -91,6 +98,25 @@ namespace DevonC
 			case VarType::Int:		return 4;
 			default:				return -1;
 			}
+		}
+
+		void ErrorMessage(EErrorCode ErrorCode, std::string source, size_t line)
+		{
+			std::cout << source << "Line(" << line << ") ";
+
+			switch(ErrorCode)
+			{
+			case EErrorCode::VoidVarDecl:				
+				std::cout << "\'void\' is not a valid variable type.";	
+				break;
+
+			case EErrorCode::BadInitializerLiteralType:	
+				std::cout << "Initializer literal is incompatible with the type of the variable being declared.";	
+				break;
+			}
+
+			std::cout << '\n';
+			++NbErrors;
 		}
 
 	public:
@@ -120,15 +146,34 @@ namespace DevonC
 				for(auto arraySize : var.ArraySizes)
 					std::cout << "[" << arraySize << "]";
 
+				if(var.StaticInit.has_value())
+					std::cout << " = " << var.StaticInit.value() << "\n";
+
 				std::cout << "\n";
 			}
 		}
 
 		Variable CurVarDecl;
-		int CurLiteralValue;
+		int CurLiteralValue = 0;
+		LiteralType CurLiteralType = LiteralType::None;
 
-		void PushPendingVarDecl()
+		void SetCurLiteral(LiteralType _Type, int _Value=0)
 		{
+			CurLiteralValue = _Value;
+			CurLiteralType = _Type;
+		}
+
+		void PushPendingVarDecl(const std::string & source, const size_t line)
+		{
+			if(CurVarDecl.Type == VarType::Void && CurVarDecl.PointerIndirection == 0)
+				ErrorMessage(EErrorCode::VoidVarDecl, source, line);
+
+			if(CurVarDecl.StaticInit.has_value() 
+			   && CurVarDecl.PointerIndirection > 0
+			   && CurLiteralType != LiteralType::Nullptr 
+			   )
+				ErrorMessage(EErrorCode::BadInitializerLiteralType, source, line);
+
 			PendingVarDecls.push_back(std::move(CurVarDecl));
 		}
 
@@ -137,5 +182,7 @@ namespace DevonC
 			GlobalVars.insert(GlobalVars.end(), PendingVarDecls.begin(), PendingVarDecls.end());
 			PendingVarDecls.clear();
 		}
+
+		int GetNbErrors() const { return NbErrors; }
 	};
 }
