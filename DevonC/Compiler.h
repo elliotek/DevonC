@@ -7,6 +7,8 @@
 
 #include "../PEGTL-master/include/tao/pegtl.hpp"
 
+#define DLOG printf
+
 namespace DevonC
 {
 	enum class LiteralType : unsigned char
@@ -292,28 +294,11 @@ namespace DevonC
 		unknown
 	> > {};
 
-
-	template<> struct maction< blank_line >
-	{
-		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
-		{
-			//		std::cout << "BLANK LINE" << std::endl;
-		}
-	};
-
-	template<> struct maction< sblk >
-	{
-		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
-		{
-			//		std::cout << "SBLK(" << in.string() << ")" << std::endl;
-		}
-	};
-
 	template<> struct maction< funcargexpression >
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "FUNCARGEXPRESSION : " << in.string() << std::endl;
+			DLOG("FUNCARGEXPRESSION : %s\n", in.string().c_str());
 		}
 	};
 
@@ -321,7 +306,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "FUNCCALL : " << in.string() << std::endl;
+			DLOG("FUNCCALL : %s\n", in.string().c_str());
 		}
 	};
 
@@ -329,7 +314,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "EXPRESSIONERROR : " << in.string() << std::endl;
+			DLOG("EXPRESSIONERROR : %s\n", in.string().c_str());
 		}
 	};
 
@@ -337,7 +322,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "APPLYUNARYEXPRESSION : " << in.string() << std::endl;
+			DLOG("APPLYUNARYEXPRESSION : %s\n", in.string().c_str());
 		}
 	};
 
@@ -345,7 +330,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "PRODUCTEXPRESSION : " << in.string() << std::endl;
+			DLOG("PRODUCTEXPRESSION : %s\n", in.string().c_str());
 		}
 	};
 
@@ -353,7 +338,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "SUMEXPRESSION : " << in.string() << std::endl;
+			DLOG("SUMEXPRESSION : %s\n", in.string().c_str());
 		}
 	};
 
@@ -361,7 +346,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "RELOP : " << in.string() << std::endl;
+			DLOG("RELOP : %s\n", in.string().c_str());
 		}
 	};
 
@@ -369,7 +354,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "LITERALDECIMAL : " << in.string() << std::endl;
+			DLOG("LITERALDECIMAL : %s\n", in.string().c_str());
 			Compiler.SetCurLiteral(LiteralType::Numeric, std::stoi(in.string()));
 		}
 	};
@@ -377,7 +362,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "LITERALCHAR : " << in.string() << std::endl;
+			DLOG("LITERALCHAR : %s\n", in.string().c_str());
 			Compiler.SetCurLiteral(LiteralType::Numeric, std::string(in.string())[1]);
 		}
 	};
@@ -386,7 +371,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "LITERALHEXA : " << in.string() << std::endl;
+			DLOG("LITERALHEXA : %s\n", in.string().c_str());
 			Compiler.SetCurLiteral(LiteralType::Numeric, std::stoi(in.string(), nullptr, 16));
 		}
 	};
@@ -395,7 +380,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "LITERALTRUE : " << std::endl;
+			DLOG("LITERALTRUE\n");
 			Compiler.SetCurLiteral(LiteralType::Boolean, 1);
 		}
 	};
@@ -404,7 +389,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "LITERALFALSE : " << std::endl;
+			DLOG("LITERALFALSE\n");
 			Compiler.SetCurLiteral(LiteralType::Boolean, 0);
 		}
 	};
@@ -413,7 +398,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "LITERALNULLPTR : " << std::endl;
+			DLOG("LITERALNULLPTR\n");
 			Compiler.SetCurLiteral(LiteralType::Nullptr);
 		}
 	};
@@ -422,7 +407,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "! EXPR : " << in.string() << std::endl;
+			DLOG("! EXPR : %s\n", in.string().c_str());
 		}
 	};
 
@@ -430,7 +415,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "REL EXPR : " << in.string() << std::endl;
+			DLOG("REL EXPR : %s\n", in.string().c_str());
 		}
 	};
 
@@ -438,7 +423,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "|| EXPR : " << in.string() << std::endl;
+			DLOG("|| EXPR : %s\n", in.string().c_str());
 		}
 	};
 
@@ -446,15 +431,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "&& EXPR : " << in.string() << std::endl;
-		}
-	};
-
-	template<> struct maction< literalexp >
-	{
-		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
-		{
-			//		std::cout << "LITERALEXP : " << in.string() << std::endl;
+			DLOG("&& EXPR : %s\n", in.string().c_str());
 		}
 	};
 
@@ -462,7 +439,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "GOTOSTATEMENT : " << in.string() << std::endl;
+			DLOG("GOTOSTATEMENT : %s\n", in.string().c_str());
 		}
 	};
 
@@ -470,7 +447,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "IFCOND : " << in.string() << std::endl;
+			DLOG("IFCOND : %s\n", in.string().c_str());
 		}
 	};
 
@@ -478,7 +455,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "DOWHILECOND : " << in.string() << std::endl;
+			DLOG("DOWHILECOND : %s\n", in.string().c_str());
 		}
 	};
 
@@ -486,7 +463,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "WHILECOND : " << in.string() << std::endl;
+			DLOG("WHILECOND : %s\n", in.string().c_str());
 		}
 	};
 
@@ -494,7 +471,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "MEMBERID : " << in.string() << std::endl;
+			DLOG("MEMBERID : %s\n", in.string().c_str());
 		}
 	};
 
@@ -502,7 +479,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "ARRAYINDEX : " << in.string() << std::endl;
+			DLOG("ARRAYINDEX : %s\n", in.string().c_str());
 		}
 	};
 
@@ -510,15 +487,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "ARRAYACCESS : " << in.string() << std::endl;
-		}
-	};
-
-	template<> struct maction< varid >
-	{
-		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
-		{
-			//std::cout << "VARID : " << in.string() << std::endl;
+			DLOG("ARRAYACCESS : %s\n", in.string().c_str());
 		}
 	};
 
@@ -526,7 +495,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "LVALUE : " << in.string() << std::endl;
+			DLOG("LVALUE : %s\n", in.string().c_str());
 		}
 	};
 
@@ -534,7 +503,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "ASSIGNMENT : " << in.string() << std::endl;
+			DLOG("ASSIGNMENT : %s\n", in.string().c_str());
 		}
 	};
 
@@ -542,7 +511,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "FORSTATEMENT" << std::endl;
+			DLOG("FORSTATEMENT\n");
 		}
 	};
 
@@ -550,7 +519,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "FORCOND : " << in.string() << std::endl;
+			DLOG("FORCOND : %s\n", in.string().c_str());
 		}
 	};
 
@@ -558,7 +527,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "NEXTSTATEMENT : " << in.string() << std::endl;
+			DLOG("NEXTSTATEMENT : %s\n", in.string().c_str());
 		}
 	};
 
@@ -566,7 +535,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "IFSTATEMENT" << std::endl;
+			DLOG("IFSTATEMENT\n");
 		}
 	};
 
@@ -574,7 +543,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "ELSESTATEMENT" << std::endl;
+			DLOG("ELSESTATEMENT\n");
 		}
 	};
 
@@ -582,7 +551,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "DO WHILE STATEMENT : " << in.string() << std::endl;
+			DLOG("DO WHILE STATEMENT : %s\n", in.string().c_str());
 		}
 	};
 
@@ -590,12 +559,12 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "WHILE STATEMENT : " << in.string() << std::endl;
+			DLOG("WHILE STATEMENT : %s\n", in.string().c_str());
 		}
 
 		template< typename Input > static void failure(Input& in, Compiler& Compiler)
 		{
-			std::cout << "!!!! WHILE STATEMENT FAILURE: " << in.string() << std::endl;
+			DLOG("!!!! WHILE STATEMENT FAILURE : %s\n", in.string().c_str());
 		}
 	};
 
@@ -603,7 +572,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "BREAK STATEMENT : " << in.string() << std::endl;
+			DLOG("BREAK STATEMENT : %s\n", in.string().c_str());
 		}
 	};
 
@@ -611,7 +580,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "UNKNOWN STATEMENT : " << in.string() << std::endl;
+			DLOG("UNKNOWN STATEMENT : %s\n", in.string().c_str());
 		}
 	};
 
@@ -619,7 +588,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "RETURN STATEMENT : " << in.string() << std::endl;
+			DLOG("RETURN STATEMENT : %s\n", in.string().c_str());
 		}
 	};
 
@@ -627,7 +596,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "FUNCPARAM : " << in.string() << std::endl;
+			DLOG("FUNCPARAM : %s\n", in.string().c_str());
 		}
 	};
 
@@ -635,7 +604,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "PARAMTYPE : " << in.string() << std::endl;
+			DLOG("PARAMTYPE : %s\n", in.string().c_str());
 		}
 	};
 
@@ -643,7 +612,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "PARAMID : " << in.string() << std::endl;
+			DLOG("PARAMID : %s\n", in.string().c_str());
 		}
 	};
 
@@ -651,7 +620,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "LOCALSCOPE END : " << in.string() << std::endl;
+			DLOG("LOCALSCOPE END : %s\n", in.string().c_str());
 		}
 	};
 
@@ -659,7 +628,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "LABELID : " << in.string() << std::endl;
+			DLOG("LABELID : %s\n", in.string().c_str());
 		}
 	};
 
@@ -667,7 +636,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "LABEL : " << in.string() << std::endl;
+			DLOG("LABEL : %s\n", in.string().c_str());
 		}
 	};
 
@@ -675,7 +644,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "UNKNOWN : " << in.string() << std::endl;
+			DLOG("UNKNOWN : %s\n", in.string().c_str());
 		}
 	};
 
@@ -683,7 +652,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "SCOPE START" << std::endl;
+			DLOG("SCOPE START : %s\n", in.string().c_str());
 		}
 	};
 
@@ -691,23 +660,16 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "SCOPE END" << std::endl;
+			DLOG("SCOPE END : %s\n", in.string().c_str());
 		}
 	};
 
-	template<> struct maction< funcscope >
-	{
-		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
-		{
-			//		std::cout << "FUNCSCOPE END" << std::endl;
-		}
-	};
 
 	template<> struct maction< vartype >
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "VARTYPE : " << in.string() << std::endl;
+			DLOG("VARTYPE : %s\n", in.string().c_str());
 		}
 	};
 
@@ -715,7 +677,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "FUNCTYPE : " << in.string() << std::endl;
+			DLOG("FUNCTYPE : %s\n", in.string().c_str());
 		}
 	};
 
@@ -723,7 +685,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "ARRAY SIZE : " << in.string() << std::endl;
+			DLOG("ARRAY SIZE : %s\n", in.string().c_str());
 			Compiler.CurVarDecl.ArraySizes.push_back(Compiler.CurLiteralValue);
 		}
 	};
@@ -758,7 +720,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "FUNCID : " << in.string() << std::endl;
+			DLOG("FUNCID : %s\n", in.string().c_str());
 		}
 	};
 
@@ -766,7 +728,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "ID : " << in.string() << std::endl;
+			DLOG("ID : %s\n", in.string().c_str());
 		}
 	};
 
@@ -774,7 +736,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "FUNCDECL IS VALID" << std::endl;
+			DLOG("FUNCDECL IS VALID\n");
 		}
 	};
 
@@ -791,7 +753,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "GLOBALVARDECL    " << in.string() << std::endl;
+			DLOG("GLOBALVARDECL : %s\n", in.string().c_str());
 			Compiler.ValidateGlobalVar();
 		}
 	};
@@ -800,7 +762,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "LOCALVARDECL    " << in.string() << std::endl;
+			DLOG("LOCALVARDECL : %s\n", in.string().c_str());
 		}
 	};
 
@@ -808,7 +770,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "VARINIT    " << in.string() << std::endl;
+			DLOG("VARINIT : %s\n", in.string().c_str());
 			Compiler.CurVarDecl.StaticInit = Compiler.CurLiteralValue;
 		}
 	};
@@ -817,7 +779,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "VARDECL    " << in.string() << std::endl;
+			DLOG("VARDECL : %s\n", in.string().c_str());
 
 			const auto pos = in.position();
 			Compiler.PushPendingVarDecl(pos.source, pos.line);
@@ -828,17 +790,10 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "DIRECTIVE    " << in.string();
+			DLOG("DIRECTIVE : %s\n", in.string().c_str());
 		}
 	};
 
-	template<> struct maction< declaration >
-	{
-		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
-		{
-			//std::cout << in.string() << std::endl;
-		}
-	};
 
 	template<> struct maction< program >
 	{
