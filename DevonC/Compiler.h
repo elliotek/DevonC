@@ -8,7 +8,7 @@
 
 #include "../PEGTL-master/include/tao/pegtl.hpp"
 
-#define DLOG //printf
+#define DLOG printf
 
 namespace DevonC
 {
@@ -122,7 +122,6 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, std::string& out)
 		{
-			DLOG("PP_COMMENT : %s\n", in.string());
 			out += "\n";
 		}
 	};
@@ -132,7 +131,6 @@ namespace DevonC
 		template< typename Input > static void apply(const Input& in, std::string& out)
 		{
 			std::string lc = in.string();
-			DLOG("PP_LONG_COMMENT : % s\n", in.string());
 			size_t n = std::count(lc.begin(), lc.end(), '\n');
 			for (int i = 0; i < n; i++)
 				out += "\n";
@@ -159,7 +157,9 @@ namespace DevonC
 	struct blank_line : until< eol, blank > {};
 	struct sblk : star<sor<blank, eol>> {};
 	struct pblk : plus<sor<blank, eol>> {};
-	struct directive : seq< sblk, one<'#'>, until< eol, any > > {};
+	struct filename : star<if_then_else<at<sor<one<'"'>, one<'>'>>>, failure, seven>> {};
+	struct directive_include : seq< TAO_PEGTL_STRING("#include"), sblk, sor<one<'"'>, one<'<'>>, filename, sor<one<'"'>, one<'>'>> > {};
+	struct directive : seq< sblk, sor<directive_include>, until< eol, any > > {};
 	struct Id : seq< alpha, star<alnum> > {};
 
 	struct type_int : TAO_PEGTL_STRING("int") {};
@@ -788,11 +788,11 @@ namespace DevonC
 		}
 	};
 
-	template<> struct maction< directive >
+	template<> struct maction< directive_include >
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			DLOG("DIRECTIVE : %s\n", in.string().c_str());
+			DLOG("INCLUDE : %s\n", in.string().c_str());
 		}
 	};
 
@@ -838,13 +838,11 @@ namespace DevonC
 		template< typename Input >
 		static void start(Input& in, Compiler& Compiler)
 		{
-			std::cout << "START OF COMPILATION.\n";
 		}
 
 		template< typename Input >
 		static void success(Input& in, Compiler& Compiler)
 		{
-			std::cout << "END OF COMPILATION.\n";
 		}
 
 		template< typename Input >
