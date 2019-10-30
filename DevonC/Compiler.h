@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stack>
 #include <string>
 #include <vector>
 #include <optional>
@@ -7,7 +8,7 @@
 
 #include "../PEGTL-master/include/tao/pegtl.hpp"
 
-#define DLOG printf
+#define DLOG //printf
 
 namespace DevonC
 {
@@ -83,6 +84,7 @@ namespace DevonC
 
 	class Compiler
 	{
+		std::stack<std::string>	IncludeStack;
 		std::vector<Variable>	GlobalVars;
 		std::vector<Function>	Functions;
 		std::vector<Scope>		ScopeStack;
@@ -120,7 +122,7 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, std::string& out)
 		{
-			std::cout << "PP_COMMENT : " << in.string() << std::endl;
+			DLOG("PP_COMMENT : %s\n", in.string());
 			out += "\n";
 		}
 	};
@@ -130,7 +132,7 @@ namespace DevonC
 		template< typename Input > static void apply(const Input& in, std::string& out)
 		{
 			std::string lc = in.string();
-			std::cout << "PP_LONG_COMMENT : " << lc << std::endl;
+			DLOG("PP_LONG_COMMENT : % s\n", in.string());
 			size_t n = std::count(lc.begin(), lc.end(), '\n');
 			for (int i = 0; i < n; i++)
 				out += "\n";
@@ -811,13 +813,11 @@ namespace DevonC
 		template< typename Input >
 		static void start(Input& in, std::string& out)
 		{
-			std::cout << "START OF PREPROCESS.\n";
 		}
 
 		template< typename Input >
 		static void success(Input& in, std::string& out)
 		{
-			std::cout << "END OF PREPROCESS.\n";
 		}
 
 		template< typename Input >

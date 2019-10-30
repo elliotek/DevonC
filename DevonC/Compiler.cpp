@@ -18,7 +18,7 @@ int Compiler::TypeSize(VarType _Type)
 
 void Compiler::ErrorMessage(EErrorCode ErrorCode, std::string source, size_t line)
 {
-	std::cout << source << "Line(" << line << ") ";
+	std::cout << IncludeStack.top() << " Line " << line << " : ";
 
 	switch (ErrorCode)
 	{
@@ -37,12 +37,16 @@ void Compiler::ErrorMessage(EErrorCode ErrorCode, std::string source, size_t lin
 
 void Compiler::Compile(char* _Filename)
 {
+	IncludeStack.push(_Filename);
+
 	std::string PreProcessedStr;
 	file_input FileInput(_Filename);
 	parse<preprocess, maction, mcontrol>(FileInput, PreProcessedStr);
 
 	string_input PreProcessedStrInput(PreProcessedStr, "");
 	parse<program, maction, mcontrol>(PreProcessedStrInput, *this);
+
+	IncludeStack.pop();
 }
 
 void Compiler::SetCurLiteral(LiteralType _Type, int _Value)
@@ -54,7 +58,10 @@ void Compiler::SetCurLiteral(LiteralType _Type, int _Value)
 void Compiler::PushPendingVarDecl(const std::string& source, const size_t line)
 {
 	if (CurVarDecl.Type == VarType::Void && CurVarDecl.PointerIndirection == 0)
+	{
 		ErrorMessage(EErrorCode::VoidVarDecl, source, line);
+		CurVarDecl.Type = VarType::Int;
+	}
 
 	if (CurVarDecl.StaticInit.has_value()
 		&& CurVarDecl.PointerIndirection > 0
