@@ -80,6 +80,7 @@ namespace DevonC
 	{
 		VoidVarDecl,
 		BadInitializerLiteralType,
+		IncludeFileFail,
 	};
 
 	class Compiler
@@ -92,16 +93,17 @@ namespace DevonC
 		int NbErrors = 0;
 
 		int TypeSize(VarType _Type);
-		void ErrorMessage(EErrorCode ErrorCode, std::string source, size_t line);
 
 	public:
+		std::string				LastFilename;
 		Variable CurVarDecl;
 		int CurLiteralValue = 0;
 		LiteralType CurLiteralType = LiteralType::None;
 
-		void Compile(char* _Filename);
+		bool Compile(const char* _Filename);
+		void ErrorMessage(EErrorCode ErrorCode, size_t line);
 		void SetCurLiteral(LiteralType _Type, int _Value = 0);
-		void PushPendingVarDecl(const std::string& source, const size_t line);
+		void PushPendingVarDecl(const size_t line);
 		void ValidateGlobalVar();
 		int GetNbErrors() const { return NbErrors; }
 		void DumpDebug();
@@ -145,13 +147,6 @@ namespace DevonC
 		}
 	};
 
-	template<> struct maction< preprocess >
-	{
-		template< typename Input > static void apply(const Input& in, std::string& out)
-		{
-			std::cout << "PREPROCESS" << std::endl;
-		}
-	};
 
 
 	struct blank_line : until< eol, blank > {};
@@ -783,8 +778,17 @@ namespace DevonC
 		{
 			DLOG("VARDECL : %s\n", in.string().c_str());
 
-			const auto pos = in.position();
-			Compiler.PushPendingVarDecl(pos.source, pos.line);
+			const auto & pos = in.position();
+			Compiler.PushPendingVarDecl(pos.line);
+		}
+	};
+
+	template<> struct maction< filename >
+	{
+		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
+		{
+			Compiler.LastFilename = in.string();
+			//DLOG("FILENAME : %s\n", in.string().c_str());
 		}
 	};
 
@@ -792,7 +796,12 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			DLOG("INCLUDE : %s\n", in.string().c_str());
+			DLOG("INCLUDE : %s\n", Compiler.LastFilename.c_str());
+			if(!Compiler.Compile(Compiler.LastFilename.c_str()))
+			{
+				const auto & pos = in.position();
+				Compiler.ErrorMessage(EErrorCode::IncludeFileFail, pos.line);
+			}
 		}
 	};
 
@@ -801,10 +810,9 @@ namespace DevonC
 	{
 		template< typename Input > static void apply(const Input& in, Compiler& Compiler)
 		{
-			std::cout << "END OF PROGRAM.\n";
+//			std::cout << "END OF PROGRAM.\n";
 		}
 	};
-
 
 	template< typename Rule > struct mcontrol : normal< Rule > {};
 

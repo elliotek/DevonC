@@ -8,7 +8,7 @@ Full, free support by email, phone and text.
 Register now or call 0845 638 1421 to sign up and start using SMS text messaging today.
 */
 
-#include "../PEGTL-master/include/tao/pegtl.hpp"
+#include "IncludeTest.c"
 
 namespace pegtl = TAO_PEGTL_NAMESPACE;
 using namespace pegtl;

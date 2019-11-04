@@ -16,12 +16,16 @@ int Compiler::TypeSize(VarType _Type)
 	}
 }
 
-void Compiler::ErrorMessage(EErrorCode ErrorCode, std::string source, size_t line)
+void Compiler::ErrorMessage(EErrorCode ErrorCode, size_t line)
 {
 	std::cout << IncludeStack.top() << " Line " << line << " : ";
 
 	switch (ErrorCode)
 	{
+	case EErrorCode::IncludeFileFail:
+		std::cout << "#include failed : \"" << LastFilename << "\"";
+		break;
+
 	case EErrorCode::VoidVarDecl:
 		std::cout << "\'void\' is not a valid variable type.";
 		break;
@@ -31,22 +35,34 @@ void Compiler::ErrorMessage(EErrorCode ErrorCode, std::string source, size_t lin
 		break;
 	}
 
-	std::cout << '\n';
+	std::cout << std::endl;
 	++NbErrors;
 }
 
-void Compiler::Compile(char* _Filename)
+bool Compiler::Compile(const char * _Filename)
 {
 	IncludeStack.push(_Filename);
+	
+	bool Ret = true;
 
-	std::string PreProcessedStr;
-	file_input FileInput(_Filename);
-	parse<preprocess, maction, mcontrol>(FileInput, PreProcessedStr);
+	try
+	{
+		std::string PreProcessedStr;
+		file_input FileInput(_Filename);
+		parse<preprocess, maction, mcontrol>(FileInput, PreProcessedStr);
 
-	string_input PreProcessedStrInput(PreProcessedStr, "");
-	parse<program, maction, mcontrol>(PreProcessedStrInput, *this);
+		string_input PreProcessedStrInput(PreProcessedStr, "");
+		parse<program, maction, mcontrol>(PreProcessedStrInput, *this);
+	}
+	catch(std::exception & err)
+	{
+		std::cout << err.what() << "\n";
+		Ret = false;
+	}
 
 	IncludeStack.pop();
+
+	return Ret;
 }
 
 void Compiler::SetCurLiteral(LiteralType _Type, int _Value)
@@ -55,11 +71,11 @@ void Compiler::SetCurLiteral(LiteralType _Type, int _Value)
 	CurLiteralType = _Type;
 }
 
-void Compiler::PushPendingVarDecl(const std::string& source, const size_t line)
+void Compiler::PushPendingVarDecl(const size_t line)
 {
 	if (CurVarDecl.Type == VarType::Void && CurVarDecl.PointerIndirection == 0)
 	{
-		ErrorMessage(EErrorCode::VoidVarDecl, source, line);
+		ErrorMessage(EErrorCode::VoidVarDecl, line);
 		CurVarDecl.Type = VarType::Int;
 	}
 
@@ -67,7 +83,7 @@ void Compiler::PushPendingVarDecl(const std::string& source, const size_t line)
 		&& CurVarDecl.PointerIndirection > 0
 		&& CurLiteralType != LiteralType::Nullptr
 		)
-		ErrorMessage(EErrorCode::BadInitializerLiteralType, source, line);
+		ErrorMessage(EErrorCode::BadInitializerLiteralType, line);
 
 	PendingVarDecls.push_back(std::move(CurVarDecl));
 }
